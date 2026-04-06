@@ -24,11 +24,13 @@ export const buildQueryString = (query?: QueryParams): string => {
 };
 
 // handling Default And Custom Headers
-export const mergeHeaders = (defaultHeaders: HeadersInit, customHeaders?: HeadersInit): Headers => {
+export const mergeHeaders = (defaultHeaders: HeadersInit, customHeaders?: HeadersInit): Record<string, string> => {
   const merged = new Headers(defaultHeaders);
   const custom = new Headers(customHeaders);
   custom.forEach((value, key) => merged.set(key, value));
-  return merged;
+  const headers: Record<string, string> = {};
+  merged.forEach((value, key) => { headers[key] = value; });
+  return headers;
 };
 
 // Parsing Response Body

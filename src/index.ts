@@ -20,6 +20,7 @@ class QuokkaFetchInternal {
   private retryDelay: number;
   private cacheEnabled: boolean;
   private cacheTime: number;
+  private timeout?: number;
   private cache = new QuokkaCache();
 
   public interceptors: QuokkaInterceptors = {
@@ -38,6 +39,7 @@ class QuokkaFetchInternal {
     this.retryDelay = config?.retryDelay ?? DEFAULT_RETRY_DELAY;
     this.cacheEnabled = config?.qCache ?? false;
     this.cacheTime = config?.qCacheTime ?? DEFAULT_CACHE_TIME;
+    this.timeout = config?.timeout;
   }
 
   public async request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
@@ -65,6 +67,7 @@ class QuokkaFetchInternal {
     const finalRetryDelay = retryDelay ?? this.retryDelay;
     const isCacheEnabled = qCache ?? this.cacheEnabled;
     const finalCacheTime = qCacheTime ?? this.cacheTime;
+    const finalTimeout = timeout ?? this.timeout;
     const method = customOptions.method || HttpMethod.GET;
 
     // --- 4. CACHE CHECK (before network) ---
@@ -92,8 +95,8 @@ class QuokkaFetchInternal {
     const executeFetch = async (): Promise<T> => {
       // --- 8a. TIMEOUTS & ABORT CONTROLLERS ---
       // Automatically manage natively explicit timeout signals while injecting user-defined signals safely
-      const { controller, timeoutSignal, timeoutId } = getTimeoutController(timeout);
-      const finalSignal = resolveFinalSignal(timeout, customOptions.signal, controller, timeoutSignal);
+      const { controller, timeoutSignal, timeoutId } = getTimeoutController(finalTimeout);
+      const finalSignal = resolveFinalSignal(finalTimeout, customOptions.signal, controller, timeoutSignal);
 
       try {
         // --- 8b. NETWORK EXECUTION ---
@@ -128,8 +131,8 @@ class QuokkaFetchInternal {
         let message = error.message;
 
         if (error.name === 'AbortError') {
-          code = timeout ? QuokkaErrorCode.TIMEOUT : QuokkaErrorCode.ABORT;
-          message = timeout ? `Request timed out after ${timeout}ms` : 'Request was manually aborted';
+          code = finalTimeout ? QuokkaErrorCode.TIMEOUT : QuokkaErrorCode.ABORT;
+          message = finalTimeout ? `Request timed out after ${finalTimeout}ms` : 'Request was manually aborted';
         }
 
         const qfError = new QuokkaFetchError({
