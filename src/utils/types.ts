@@ -7,15 +7,17 @@ export type JSONValue = JSONPrimitive | JSONObject | JSONArray;
 
 export type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
+// **BodyInit** is the **complete union type** for **all valid fetch` request bodies**
 export type RequestPayload = JSONValue | BodyInit | null;
 
-export type QuokkaFeatureOptions = {
+export interface QuokkaFeatureOptions {
   retry?: number;
   retryDelay?: number;
   qCache?: boolean;
   qCacheTime?: number;
-};
+}
 
+// Used for overriding individual request options
 export type FetchOptions = Omit<RequestInit, 'method' | 'body'> & QuokkaFeatureOptions & {
   method?: HttpMethod;
   query?: QueryParams;
@@ -36,12 +38,13 @@ export interface QuokkaInterceptors {
   error: Array<(error: Error) => Promise<void> | void>;
 }
 
-export type QuokkaFetchConfig = QuokkaFeatureOptions & {
+// Used for initializing the QuokkaFetch instance : Config
+export interface QuokkaFetchConfig extends QuokkaFeatureOptions {
   baseURL?: string;
   headers?: HeadersInit;
   responseType?: ResponseType;
   timeout?: number;
-};
+}
 
 export interface QuokkaRequestPayload extends Omit<FetchOptions, 'method' | 'body'> {
   url: string;
