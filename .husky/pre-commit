@@ -1,4 +1,19 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+
+# ━━━ Domain Guard: Only @quokkalabs.com emails can commit ━━━
+EMAIL=$(git config user.email)
+DOMAIN="@quokkalabs.com"
+
+if echo "$EMAIL" | grep -qv "$DOMAIN$"; then
+  echo ""
+  echo "❌ COMMIT BLOCKED"
+  echo "   Your email: $EMAIL"
+  echo "   Required domain: *$DOMAIN"
+  echo ""
+  echo "   Fix it with:"
+  echo "   git config user.email \"yourname$DOMAIN\""
+  echo ""
+  exit 1
+fi
 
 npx lint-staged
