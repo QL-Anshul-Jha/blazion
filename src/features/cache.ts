@@ -1,4 +1,4 @@
-import { InterceptedResponseData, CacheEntry } from './types';
+import { InterceptedResponseData, CacheEntry } from '../utils/types';
 
 // In-memory cache with TTL-based expiry
 export class QuokkaCache {

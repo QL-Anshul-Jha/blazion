@@ -10,11 +10,19 @@ export type QueryParams = Record<string, string | number | boolean | null | unde
 // **BodyInit** is the **complete union type** for **all valid fetch` request bodies**
 export type RequestPayload = JSONValue | BodyInit | null;
 
+export interface ProgressEventData {
+  loaded: number;
+  total: number;
+  progress: number;
+}
+
 export interface QuokkaFeatureOptions {
   retry?: number;
   retryDelay?: number;
   qCache?: boolean;
   qCacheTime?: number;
+  onUploadProgress?: (event: ProgressEventData) => void;
+  onDownloadProgress?: (event: ProgressEventData) => void;
 }
 
 // Used for overriding individual request options

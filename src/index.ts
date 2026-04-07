@@ -1,8 +1,9 @@
 import { HttpMethod, ResponseType, QuokkaErrorCode } from './utils/enums';
 import { FetchOptions, JSONValue, QuokkaFetchConfig, QuokkaInterceptors, QuokkaRequestConfig, InterceptedResponseData, QuokkaCallable, QuokkaRequestPayload, QuokkaFetchError } from './utils/types';
 import { buildQueryString, mergeHeaders, parseResponseBody, handleResponseError, resolvePayloadAndHeaders, getTimeoutController, resolveFinalSignal } from './utils/helpers';
-import { QuokkaCache } from './utils/cache';
-import { executeWithRetry } from './utils/retry';
+import { QuokkaCache } from './features/cache';
+import { executeWithRetry } from './features/retry';
+import { trackDownloadProgress, executeXhrWithUploadProgress } from './features/progress';
 
 export * from './utils/types';
 export * from './utils/enums';
@@ -100,8 +101,19 @@ class QuokkaFetchInternal {
 
       try {
         // --- 8b. NETWORK EXECUTION ---
-        // Trigger execution via browser-level fetch API mapped to standardized formatting
-        const response = await fetch(finalUrl, { ...customOptions, headers, body: finalBody, signal: finalSignal });
+        let response: Response;
+        if (config.onUploadProgress && typeof XMLHttpRequest !== 'undefined') {
+          // XHR explicitly handles both upload streams natively alongside download bounds 
+          response = await executeXhrWithUploadProgress(finalUrl, { ...config, signal: finalSignal }, finalBody);
+        } else {
+          // Trigger execution via natively robust fetch API dynamically mapped
+          response = await fetch(finalUrl, { ...customOptions, headers, body: finalBody, signal: finalSignal });
+          
+          if (config.onDownloadProgress) {
+            // Read HTTP buffer implicitly using interceptor streaming masks
+            response = trackDownloadProgress(response, config.onDownloadProgress);
+          }
+        }
         const expectedType = responseType || this.defaultResponseType;
 
         // --- 8c. RESPONSE PARSING & THROWING ---

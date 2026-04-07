@@ -2,7 +2,7 @@
 import { createQuokkaFetch, HttpMethod, QuokkaFetchError } from './index';
 
 async function demo() {
-  console.log('🚀 QUOKKAFETCH DEMO\n');
+  console.log('🚀 QUOKKA-FETCH DEMO\n');
 
   // ========================================
   // SETUP 1: Global retry + cache via config
@@ -74,6 +74,27 @@ async function demo() {
   } catch (e) {
     if (e instanceof QuokkaFetchError && e.isAbortError) {
       console.log(`  ✅ Request aborted: ${e.code}\n`);
+    }
+  }
+
+  // ----- PROGRESS DEMO -----
+  console.log('--- UPLOAD & DOWNLOAD PROGRESS ---');
+  try {
+    await api({
+      url: '/posts',
+      method: HttpMethod.POST,
+      payload: { title: 'large payload simulation', data: 'A'.repeat(500000) },
+      onUploadProgress: (e) => {
+        console.log(`  Upload Progress: ${(e.progress * 100).toFixed(0)}% (${e.loaded}/${e.total} bytes)`);
+      },
+      onDownloadProgress: (e) => {
+        console.log(`  Download Progress: ${(e.progress * 100).toFixed(0)}% (${e.loaded}/${e.total} bytes)`);
+      }
+    });
+    console.log('  ✅ Upload & Download Progress complete\n');
+  } catch (e) {
+    if (e instanceof Error) {
+       console.log('❌ Progress test failed:', e);
     }
   }
 

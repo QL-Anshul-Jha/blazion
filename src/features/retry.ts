@@ -1,4 +1,4 @@
-import { QuokkaFetchError } from './types';
+import { QuokkaFetchError } from '../utils/types';
 
 const MAX_RETRY_DELAY = 30000;
 
