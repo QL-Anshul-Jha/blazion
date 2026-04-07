@@ -1,4 +1,4 @@
-import { QuokkaFetchError } from '../utils/types';
+import { BlazionError } from "../utils/types";
 
 const MAX_RETRY_DELAY = 30000;
 
@@ -8,16 +8,16 @@ export const executeWithRetry = async <T>(
   retryCount: number,
   retryDelay: number
 ): Promise<T> => {
-  let lastError: QuokkaFetchError | Error | null = null;
+  let lastError: BlazionError | Error | null = null;
 
   for (let attempt = 0; attempt <= retryCount; attempt++) {
     try {
       return await fn();
     } catch (e) {
-      lastError = e as QuokkaFetchError | Error;
+      lastError = e as BlazionError | Error;
 
-      // If the error is a QuokkaFetchError, only retry if it's retryable
-      if (lastError instanceof QuokkaFetchError && !lastError.retryable) {
+      // If the error is a BlazionError, only retry if it's retryable
+      if (lastError instanceof BlazionError && !lastError.retryable) {
         throw lastError;
       }
 

@@ -1,4 +1,4 @@
-import { HttpMethod, ResponseType, QuokkaErrorCode } from './enums';
+import { HttpMethod, ResponseType, BlazionErrorCode } from './enums';
 
 export type JSONPrimitive = string | number | boolean | null;
 export type JSONObject = { [key: string]: JSONValue };
@@ -26,7 +26,7 @@ export interface QuokkaFeatureOptions {
 }
 
 // Used for overriding individual request options
-export type FetchOptions = Omit<RequestInit, 'method' | 'body'> & QuokkaFeatureOptions & {
+export type FetchOptions = Omit<RequestInit, 'method' | 'body'> & BlazionFeatureOptions & {
   method?: HttpMethod;
   query?: QueryParams;
   body?: RequestPayload;
@@ -34,38 +34,38 @@ export type FetchOptions = Omit<RequestInit, 'method' | 'body'> & QuokkaFeatureO
   responseType?: ResponseType;
 };
 
-export interface QuokkaRequestConfig extends FetchOptions {
+export interface BlazionRequestConfig extends FetchOptions {
   url: string;
 }
 
 export type InterceptedResponseData = JSONValue | Blob | ArrayBuffer | FormData | string;
 
-export interface QuokkaInterceptors {
-  request: Array<(config: QuokkaRequestConfig) => QuokkaRequestConfig | Promise<QuokkaRequestConfig>>;
+export interface BlazionInterceptors {
+  request: Array<(config: BlazionRequestConfig) => BlazionRequestConfig | Promise<BlazionRequestConfig>>;
   response: Array<(data: InterceptedResponseData, response: Response) => InterceptedResponseData | Promise<InterceptedResponseData>>;
   error: Array<(error: Error) => Promise<void> | void>;
 }
 
-// Used for initializing the QuokkaFetch instance : Config
-export interface QuokkaFetchConfig extends QuokkaFeatureOptions {
+// Used for initializing the Blazion instance : Config
+export interface BlazionConfig extends BlazionFeatureOptions {
   baseURL?: string;
   headers?: HeadersInit;
   responseType?: ResponseType;
   timeout?: number;
 }
 
-export interface QuokkaRequestPayload extends Omit<FetchOptions, 'method' | 'body'> {
+export interface BlazionRequestPayload extends Omit<FetchOptions, 'method' | 'body'> {
   url: string;
   method?: HttpMethod;
   payload?: RequestPayload;
   params?: QueryParams;
 }
 
-export interface QuokkaCallable {
-  <T = JSONValue>(payload: QuokkaRequestPayload): Promise<T>;
+export interface BlazionCallable {
+  <T = JSONValue>(payload: BlazionRequestPayload): Promise<T>;
 
   // Fluent Event Hooks
-  onRequest(handler: (config: QuokkaRequestConfig) => QuokkaRequestConfig | Promise<QuokkaRequestConfig>): this;
+  onRequest(handler: (config: BlazionRequestConfig) => BlazionRequestConfig | Promise<BlazionRequestConfig>): this;
   onResponse(handler: (data: InterceptedResponseData, response: Response) => InterceptedResponseData | Promise<InterceptedResponseData>): this;
   onError(handler: (error: Error) => Promise<void> | void): this;
 
@@ -73,8 +73,8 @@ export interface QuokkaCallable {
   clearCache(): void;
 }
 
-export interface QuokkaFetchErrorParams {
-  code: QuokkaErrorCode;
+export interface BlazionErrorParams {
+  code: BlazionErrorCode;
   message: string;
   url: string;
   method: string;
@@ -83,7 +83,7 @@ export interface QuokkaFetchErrorParams {
   data?: JSONValue;
   headers?: Record<string, string>;
   cause?: Error;
-  config: QuokkaRequestConfig;
+  config: BlazionRequestConfig;
   raw?: JSONValue;
 }
 
@@ -93,9 +93,9 @@ export interface CacheEntry {
   ttl: number;
 }
 
-export class QuokkaFetchError extends Error {
-  public override name: string = 'QuokkaFetchError';
-  public code: QuokkaErrorCode;
+export class BlazionError extends Error {
+  public override name: string = 'BlazionError';
+  public code: BlazionErrorCode;
   public status?: number;
   public statusText?: string;
   public details: JSONValue;
@@ -110,8 +110,9 @@ export class QuokkaFetchError extends Error {
   public isTimeoutError: boolean;
   public isAbortError: boolean;
   public raw?: JSONValue;
+  public config: BlazionRequestConfig;
 
-  constructor(params: QuokkaFetchErrorParams) {
+  constructor(params: BlazionErrorParams) {
     super(params.message);
     this.code = params.code;
     this.status = params.status;
@@ -124,17 +125,18 @@ export class QuokkaFetchError extends Error {
     this.headers = params.headers || {};
     this.cause = params.cause;
     this.raw = params.raw;
+    this.config = params.config;
 
     // Retryable logic
-    this.isTimeoutError = params.code === QuokkaErrorCode.TIMEOUT;
-    this.isNetworkError = params.code === QuokkaErrorCode.NETWORK_ERROR;
-    this.isAbortError = params.code === QuokkaErrorCode.ABORT;
+    this.isTimeoutError = params.code === BlazionErrorCode.TIMEOUT;
+    this.isNetworkError = params.code === BlazionErrorCode.NETWORK_ERROR;
+    this.isAbortError = params.code === BlazionErrorCode.ABORT;
     this.retryable = this.isTimeoutError || (this.isNetworkError && params.method === 'GET') || (!!this.status && this.status >= 500);
 
     // Properly capture stack trace for V8 engines (Chrome/Node)
-    const v8Error = Error as { captureStackTrace?: (target: object, constructor?: typeof QuokkaFetchError) => void };
+    const v8Error = Error as { captureStackTrace?: (target: object, constructor?: typeof BlazionError) => void };
     if (v8Error.captureStackTrace) {
-      v8Error.captureStackTrace(this, QuokkaFetchError);
+      v8Error.captureStackTrace(this, BlazionError);
     }
   }
 }

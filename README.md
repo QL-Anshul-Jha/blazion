@@ -1,4 +1,4 @@
-# quokka-fetch
+# blazion
 
 A lightweight, strictly-typed, zero-dependency fetch wrapper explicitly built for the `@quokkalabs.com` team. Designed for consistent, object-based API definitions.
 
@@ -6,7 +6,7 @@ A lightweight, strictly-typed, zero-dependency fetch wrapper explicitly built fo
 
 To install the package, simply run:
 ```bash
-npm install quokka-fetch
+npm install blazion
 ```
 *(Note: You must have an `@quokkalabs.com` email configured in your `git config` to install this package).*
 
@@ -19,10 +19,10 @@ It's best practice to create a configured instance of the fetcher, apply your gl
 Create a file called `api.ts`:
 
 ```typescript
-import { createQuokkaFetch, ResponseType } from 'quokka-fetch';
+import { createBlazion, ResponseType } from 'blazion';
 
 // 1. Create a custom instance with a base URL
-const apiHeader = createQuokkaFetch({
+const apiHeader = createBlazion({
   baseURL: 'https://api.quokkalabs.com/v1',
 });
 
@@ -54,7 +54,7 @@ To maintain 100% consistency, the library enforces a single `qf(apiObj)` pattern
 #### **Step 1: Define your endpoints**
 ```typescript
 // endpoints.ts
-import { HttpMethod } from 'quokka-fetch';
+import { HttpMethod } from 'blazion';
 
 export const UserEndpoints = {
   GET_PROFILE: { 
@@ -95,7 +95,7 @@ async function updateProfile(userData: any) {
 ## 4. Features & Auto-Detection
 
 ### **Automatic Content-Type Detection**
-`quokka-fetch` automatically detects your payload type to set the correct `Content-Type`:
+`blazion` automatically detects your payload type to set the correct `Content-Type`:
 - **Generic Object** → `application/json`
 - **FormData** → `multipart/form-data`
 - **URLSearchParams** → `application/x-www-form-urlencoded`
@@ -104,7 +104,7 @@ async function updateProfile(userData: any) {
 ### **Custom Response Formats**
 Use `responseType` to dictate exactly what you want back:
 ```typescript
-import { ResponseType } from 'quokka-fetch';
+import { ResponseType } from 'blazion';
 
 const audioBlob = await api({
   url: '/audio/track.mp3',

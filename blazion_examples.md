@@ -1,19 +1,19 @@
-# QuokkaFetch — Complete Usage Examples
+# Blazion — Complete Usage Examples
 
 Every feature, every scenario.
 
 ---
 
-## 1. Instance Creation ([createQuokkaFetch](file:///home/user/Work/quokka-fetch/src/index.ts#169-204))
+## 1. Instance Creation ([createBlazion](file:///home/user/Work/blazion/src/index.ts#169-204))
 
 ```ts
-import qf, { createQuokkaFetch, HttpMethod, ResponseType, QuokkaFetchError } from 'quokka-fetch';
+import qf, { createBlazion, HttpMethod, ResponseType, BlazionError } from 'blazion';
 
 // ━━━ Default instance (zero config) ━━━
 qf({ url: 'https://api.example.com/users' });
 
 // ━━━ Custom instance (real-world setup) ━━━
-const api = createQuokkaFetch({
+const api = createBlazion({
   baseURL: 'https://api.myapp.com/v1',
   headers: { Authorization: 'Bearer token123' },
   timeout: 10000,        // 10s default timeout
@@ -123,7 +123,7 @@ const formData = await api<FormData>({
 
 ## 5. Body Auto-Detection
 
-QuokkaFetch automatically sets `Content-Type` based on what you pass:
+Blazion automatically sets `Content-Type` based on what you pass:
 
 ```ts
 // ━━━ Object/Array → auto JSON.stringify + Content-Type: application/json ━━━
@@ -170,7 +170,7 @@ await api({ url: '/upload', method: HttpMethod.POST, payload: blob });
 try {
   await api({ url: '/slow-endpoint', timeout: 3000 }); // 3s limit
 } catch (err) {
-  const error = err as QuokkaFetchError;
+  const error = err as BlazionError;
   error.isTimeoutError; // true
   error.code;           // "TIMEOUT_ERROR"
   error.message;        // "Request timed out after 3000ms"
@@ -188,7 +188,7 @@ setTimeout(() => controller.abort(), 2000);
 try {
   await promise;
 } catch (err) {
-  const error = err as QuokkaFetchError;
+  const error = err as BlazionError;
   error.isAbortError; // true
   error.code;         // "ABORT_ERROR"
 }
@@ -208,7 +208,7 @@ await api({
 
 ```ts
 // ━━━ Instance-level (all requests retry 3 times) ━━━
-const api = createQuokkaFetch({
+const api = createBlazion({
   baseURL: 'https://api.myapp.com',
   retry: 3,
   retryDelay: 1000,  // 1s → 2s → 4s (exponential backoff, max 30s)
@@ -245,7 +245,7 @@ await api({
 
 ```ts
 // ━━━ Enable at instance level ━━━
-const api = createQuokkaFetch({
+const api = createBlazion({
   baseURL: 'https://api.myapp.com',
   qCache: true,
   qCacheTime: 60000,  // 1 minute TTL
@@ -276,7 +276,7 @@ api.clearCache();  // wipe all cached data so next GET is fresh
 
 ## 9. Interceptors
 
-### 9a. [onRequest](file:///home/user/Work/quokka-fetch/src/index.ts#185-189) — Modify config before every request
+### 9a. [onRequest](file:///home/user/Work/blazion/src/index.ts#185-189) — Modify config before every request
 
 ```ts
 // Auth token injection
@@ -303,7 +303,7 @@ api.onRequest((config) => {
 });
 ```
 
-### 9b. [onResponse](file:///home/user/Work/quokka-fetch/src/index.ts#189-193) — Transform response data
+### 9b. [onResponse](file:///home/user/Work/blazion/src/index.ts#189-193) — Transform response data
 
 ```ts
 // Unwrap API envelope: { data: ..., meta: ... } → just data
@@ -322,12 +322,12 @@ api.onResponse((data, response) => {
 });
 ```
 
-### 9c. [onError](file:///home/user/Work/quokka-fetch/src/index.ts#193-197) — React to errors globally
+### 9c. [onError](file:///home/user/Work/blazion/src/index.ts#193-197) — React to errors globally
 
 ```ts
 // Auto-redirect on 401
 api.onError((error) => {
-  if (error instanceof QuokkaFetchError && error.status === 401) {
+  if (error instanceof BlazionError && error.status === 401) {
     localStorage.removeItem('accessToken');
     window.location.href = '/login';
   }
@@ -335,14 +335,14 @@ api.onError((error) => {
 
 // Global error logging
 api.onError((error) => {
-  if (error instanceof QuokkaFetchError) {
+  if (error instanceof BlazionError) {
     console.error(`[API Error] ${error.code} @ ${error.url}`, error.details);
   }
 });
 
 // Send to monitoring (e.g., Sentry)
 api.onError(async (error) => {
-  if (error instanceof QuokkaFetchError && error.status && error.status >= 500) {
+  if (error instanceof BlazionError && error.status && error.status >= 500) {
     await sendToSentry(error);
   }
 });
@@ -351,7 +351,7 @@ api.onError(async (error) => {
 ### Chaining interceptors (fluent API)
 
 ```ts
-const api = createQuokkaFetch({ baseURL: 'https://api.myapp.com' })
+const api = createBlazion({ baseURL: 'https://api.myapp.com' })
   .onRequest((config) => { /* auth */ return config; })
   .onResponse((data) => { /* unwrap */ return data; })
   .onError((err) => { /* log */ });
@@ -365,10 +365,10 @@ const api = createQuokkaFetch({ baseURL: 'https://api.myapp.com' })
 try {
   const user = await api<User>({ url: '/users/9999' });
 } catch (err) {
-  const error = err as QuokkaFetchError;
+  const error = err as BlazionError;
 
   // ━━━ Error identity ━━━
-  error.name;          // "QuokkaFetchError"
+  error.name;          // "BlazionError"
   error.code;          // "NOT_FOUND"
   error.message;       // "[QF Error] 404 Not Found"
 
@@ -412,7 +412,7 @@ try {
 
 ```ts
 // ━━━━ src/lib/api.ts ━━━━
-import { createQuokkaFetch, QuokkaFetchError, HttpMethod } from 'quokka-fetch';
+import { createBlazion, BlazionError, HttpMethod } from 'blazion';
 
 // Types
 interface PaginatedResponse<T> {
@@ -427,7 +427,7 @@ interface User {
 }
 
 // Instance
-const api = createQuokkaFetch({
+const api = createBlazion({
   baseURL: 'https://api.myapp.com/v1',
   headers: { Accept: 'application/json' },
   timeout: 10000,
@@ -448,7 +448,7 @@ api.onRequest(async (config) => {
 });
 
 api.onError((error) => {
-  if (error instanceof QuokkaFetchError && error.status === 401) {
+  if (error instanceof BlazionError && error.status === 401) {
     window.location.href = '/login';
   }
 });

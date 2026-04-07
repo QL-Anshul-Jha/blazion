@@ -1,13 +1,12 @@
 /* eslint-disable no-console */
-import qf, { HttpMethod, QuokkaFetchError, createQuokkaFetch } from './index';
+import blazion, { HttpMethod, BlazionError, createBlazion } from './index';
 
 async function runTests() {
-  console.log('🚀 TESTING QUOKKA-FETCH FEATURES...\n');
+  console.log('🚀 TESTING BLAZION FEATURES...\n');
 
   try {
-    // 1. Success Case
     try {
-      const user = await qf<{ name: string }>({
+      const user = await blazion<{ name: string }>({
         url: 'https://jsonplaceholder.typicode.com/users/1',
         method: HttpMethod.GET
       });
@@ -19,14 +18,14 @@ async function runTests() {
     // 2. Structured 404 Case
     try {
       console.log('\nTesting 404 Error...');
-      await qf({
+      await blazion({
         url: 'https://jsonplaceholder.typicode.com/invalid-endpoint-999',
         method: HttpMethod.GET
       });
       console.log('❌ Failed to catch structured error');
     } catch (e) {
-      if (e instanceof QuokkaFetchError) {
-        console.log('✅ Caught Structured QuokkaFetchError:', {
+      if (e instanceof BlazionError) {
+        console.log('✅ Caught Structured BlazionError:', {
           Code: e.code,
           Status: e.status
         });
@@ -38,13 +37,13 @@ async function runTests() {
     // 3. Timeout Case
     try {
       console.log('\nTesting Timeout Error...');
-      await qf({
+      await blazion({
         url: 'https://jsonplaceholder.typicode.com/posts',
         method: HttpMethod.GET,
         timeout: 1
       });
     } catch (e) {
-      if (e instanceof QuokkaFetchError && e.isTimeoutError) {
+      if (e instanceof BlazionError && e.isTimeoutError) {
         console.log('✅ Caught Timeout Error:', e.code);
       } else {
         console.log('❌ Timeout test failed:', e);
@@ -55,7 +54,7 @@ async function runTests() {
     try {
       console.log('\nTesting Abort Error...');
       const controller = new AbortController();
-      const p = qf({
+      const p = blazion({
         url: 'https://jsonplaceholder.typicode.com/posts',
         method: HttpMethod.GET,
         signal: controller.signal
@@ -63,7 +62,7 @@ async function runTests() {
       controller.abort();
       await p;
     } catch (e) {
-      if (e instanceof QuokkaFetchError && e.isAbortError) {
+      if (e instanceof BlazionError && e.isAbortError) {
         console.log('✅ Caught Abort Error:', e.code);
       } else {
         console.log('❌ Abort test failed:', e);
@@ -73,13 +72,13 @@ async function runTests() {
     // 5. Global Timeout Case
     try {
       console.log('\nTesting Global Timeout (1ms)...');
-      const customQf = createQuokkaFetch({ timeout: 1 });
+      const customQf = createBlazion({ timeout: 1 });
       await customQf({
         url: 'https://jsonplaceholder.typicode.com/posts',
         method: HttpMethod.GET
       });
     } catch (e) {
-      if (e instanceof QuokkaFetchError && e.isTimeoutError) {
+      if (e instanceof BlazionError && e.isTimeoutError) {
         console.log('✅ Global Timeout caught correctly');
       } else {
         console.log('❌ Global Timeout failed:', e);
@@ -89,7 +88,7 @@ async function runTests() {
     // 6. Parameter Validation Case
     try {
       console.log('\nTesting Parameter Validation...');
-      await qf({
+      await blazion({
         url: 'https://jsonplaceholder.typicode.com/posts',
         method: HttpMethod.GET,
         params: {
@@ -109,7 +108,7 @@ async function runTests() {
     // 7. Retry on Timeout (should retry then fail)
     try {
       console.log('\nTesting Retry on Timeout (2 retries, 1ms timeout)...');
-      await qf({
+      await blazion({
         url: 'https://jsonplaceholder.typicode.com/posts',
         method: HttpMethod.GET,
         timeout: 1,
@@ -118,7 +117,7 @@ async function runTests() {
       });
       console.log('❌ Retry test should have timed out');
     } catch (e) {
-      if (e instanceof QuokkaFetchError && e.isTimeoutError) {
+      if (e instanceof BlazionError && e.isTimeoutError) {
         console.log('✅ Retry exhausted after retries, final timeout caught');
       } else {
         console.log('❌ Retry test failed:', e);
@@ -128,7 +127,7 @@ async function runTests() {
     // 8. Retry does NOT retry on 404 (non-retryable)
     try {
       console.log('\nTesting Retry skips 404 (non-retryable)...');
-      await qf({
+      await blazion({
         url: 'https://jsonplaceholder.typicode.com/invalid-path-404',
         method: HttpMethod.GET,
         retry: 3,
@@ -136,7 +135,7 @@ async function runTests() {
       });
       console.log('❌ 404 retry test should have thrown');
     } catch (e) {
-      if (e instanceof QuokkaFetchError && e.status === 404) {
+      if (e instanceof BlazionError && e.status === 404) {
         // If it didn't retry, it should be fast (< 1 second)
         console.log('✅ 404 threw immediately without retrying (non-retryable)');
       } else {
@@ -147,7 +146,7 @@ async function runTests() {
     // 9. Cache Hit Test
     try {
       console.log('\nTesting Cache Hit...');
-      const cachedApi = createQuokkaFetch({
+      const cachedApi = createBlazion({
         baseURL: 'https://jsonplaceholder.typicode.com',
         qCache: true,
         qCacheTime: 10000
@@ -181,7 +180,7 @@ async function runTests() {
     // 10. Cache Bypass for POST
     try {
       console.log('\nTesting Cache Bypass for POST...');
-      const cachedApi = createQuokkaFetch({
+      const cachedApi = createBlazion({
         baseURL: 'https://jsonplaceholder.typicode.com',
         qCache: true
       });
@@ -201,7 +200,7 @@ async function runTests() {
     // 11. Per-request cache override
     try {
       console.log('\nTesting Per-request Cache Override...');
-      const noCacheApi = createQuokkaFetch({
+      const noCacheApi = createBlazion({
         baseURL: 'https://jsonplaceholder.typicode.com',
         qCache: false // globally disabled
       });
@@ -234,7 +233,7 @@ async function runTests() {
     // 12. clearCache()
     try {
       console.log('\nTesting clearCache()...');
-      const api = createQuokkaFetch({
+      const api = createBlazion({
         baseURL: 'https://jsonplaceholder.typicode.com',
         qCache: true,
         qCacheTime: 60000

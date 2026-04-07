@@ -1,13 +1,14 @@
 /* eslint-disable no-console */
-import { createQuokkaFetch, HttpMethod, QuokkaFetchError } from './index';
+/* eslint-disable no-console */
+import { HttpMethod, BlazionError, createBlazion } from './index';
 
 async function demo() {
-  console.log('🚀 QUOKKA-FETCH DEMO\n');
+  console.log('🚀 BLAZION DEMO\n');
 
   // ========================================
   // SETUP 1: Global retry + cache via config
   // ========================================
-  const apiWithFeatures = createQuokkaFetch({
+  const apiWithFeatures = createBlazion({
     baseURL: 'https://jsonplaceholder.typicode.com',
     retry: 2,
     retryDelay: 500,
@@ -18,7 +19,7 @@ async function demo() {
   // ========================================
   // SETUP 2: Clean API (no retry, no cache)
   // ========================================
-  const api = createQuokkaFetch({
+  const api = createBlazion({
     baseURL: 'https://jsonplaceholder.typicode.com',
   });
 
@@ -47,7 +48,7 @@ async function demo() {
   try {
     await apiWithFeatures({ url: '/posts', timeout: 1 });
   } catch (e) {
-    if (e instanceof QuokkaFetchError) {
+    if (e instanceof BlazionError) {
       console.log(`  Error: ${e.code} — retried automatically before failing\n`);
     }
   }
@@ -57,7 +58,7 @@ async function demo() {
   try {
     await api({ url: '/posts', timeout: 1, retry: 1, retryDelay: 200 });
   } catch (e) {
-    if (e instanceof QuokkaFetchError) {
+    if (e instanceof BlazionError) {
       console.log(`  Error: ${e.code} — retried 1 time before failing\n`);
     }
   }
@@ -72,7 +73,7 @@ async function demo() {
   try {
     await api({ url: '/posts', method: HttpMethod.GET, signal: controller.signal });
   } catch (e) {
-    if (e instanceof QuokkaFetchError && e.isAbortError) {
+    if (e instanceof BlazionError && e.isAbortError) {
       console.log(`  ✅ Request aborted: ${e.code}\n`);
     }
   }
@@ -94,7 +95,7 @@ async function demo() {
     console.log('  ✅ Upload & Download Progress complete\n');
   } catch (e) {
     if (e instanceof Error) {
-       console.log('❌ Progress test failed:', e);
+      console.log('❌ Progress test failed:', e);
     }
   }
 

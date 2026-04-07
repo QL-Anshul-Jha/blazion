@@ -1,7 +1,7 @@
 import { InterceptedResponseData, CacheEntry } from '../utils/types';
 
 // In-memory cache with TTL-based expiry
-export class QuokkaCache {
+export class BlazionCache {
   private entries = new Map<string, CacheEntry>();
 
   // Generate a deterministic cache key from request params

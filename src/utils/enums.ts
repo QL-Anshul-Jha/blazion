@@ -14,7 +14,7 @@ export enum ResponseType {
   FORM_DATA = 'formdata',
 }
 
-export enum QuokkaErrorCode {
+export enum BlazionErrorCode {
   NETWORK_ERROR = 'NETWORK_ERROR',
   TIMEOUT = 'TIMEOUT_ERROR',
   ABORT = 'ABORT_ERROR',

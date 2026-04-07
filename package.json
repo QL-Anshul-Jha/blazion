@@ -1,5 +1,5 @@
 {
-  "name": "quokka-fetch",
+  "name": "blazion",
   "version": "1.0.0",
   "description": "A lightweight fetch wrapper exclusively for @quokkalabs.com",
   "main": "dist/index.js",

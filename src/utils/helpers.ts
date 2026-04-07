@@ -1,5 +1,5 @@
-import { QuokkaErrorCode, ResponseType } from './enums';
-import { JSONValue, QueryParams, RequestPayload, QuokkaRequestConfig, InterceptedResponseData, QuokkaFetchError } from './types';
+import { BlazionErrorCode, ResponseType } from './enums';
+import { JSONValue, QueryParams, RequestPayload, BlazionRequestConfig, InterceptedResponseData, BlazionError } from './types';
 import { Response_Status_Code, getBodyStrategies, getSignalStrategies } from './conditions';
 
 // Building query params 
@@ -9,10 +9,11 @@ export const buildQueryString = (query?: QueryParams): string => {
   const entries = Object.entries(query);
 
   const ALLOWED_TYPES = new Set(['string', 'number', 'boolean', 'undefined']);
+
   for (const [key, val] of entries) {
     const type = typeof val;
     if (val !== null && !ALLOWED_TYPES.has(type)) {
-      throw new TypeError(`[QuokkaFetch] Invalid parameter type for key "${key}". Expected string, number, boolean, null, or undefined but got "${type}".`);
+      throw new TypeError(`[Blazion] Invalid parameter type for key "${key}". Expected string, number, boolean, null, or undefined but got "${type}".`);
     }
   }
 
@@ -47,14 +48,14 @@ export const parseResponseBody = async (response: Response, expectedType: Respon
 };
 
 // Error Handling Logic
-export const handleResponseError = (response: Response, expectedType: ResponseType, data: InterceptedResponseData, config: QuokkaRequestConfig): void => {
+export const handleResponseError = (response: Response, expectedType: ResponseType, data: InterceptedResponseData, config: BlazionRequestConfig): void => {
   if (!response.ok) {
     const message = `[QF Error] ${response.status} ${response.statusText}`;
     const headers: Record<string, string> = {};
     response.headers.forEach((value, key) => { headers[key] = value; });
-    const code = Response_Status_Code[response.status] || QuokkaErrorCode.SERVER_ERROR;
+    const code = Response_Status_Code[response.status] || BlazionErrorCode.SERVER_ERROR;
 
-    throw new QuokkaFetchError({
+    throw new BlazionError({
       code,
       message,
       status: response.status,

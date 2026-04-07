@@ -1,32 +1,32 @@
-import { QuokkaErrorCode } from './enums';
+import { BlazionErrorCode } from './enums';
 import { RequestPayload } from './types';
 
 // RFC 9457 & Custom Error Mapping
-export const Response_Status_Code: Record<number, QuokkaErrorCode> = {
-  400: QuokkaErrorCode.BAD_REQUEST,
-  401: QuokkaErrorCode.UNAUTHORIZED,
-  403: QuokkaErrorCode.FORBIDDEN,
-  404: QuokkaErrorCode.NOT_FOUND,
-  405: QuokkaErrorCode.METHOD_NOT_ALLOWED,
-  408: QuokkaErrorCode.TIMEOUT,
-  409: QuokkaErrorCode.CONFLICT,
-  422: QuokkaErrorCode.VALIDATION_ERROR,
-  429: QuokkaErrorCode.TOO_MANY_REQUESTS,
-  500: QuokkaErrorCode.SERVER_ERROR,
-  502: QuokkaErrorCode.BAD_GATEWAY,
-  503: QuokkaErrorCode.SERVICE_UNAVAILABLE,
-  504: QuokkaErrorCode.GATEWAY_TIMEOUT,
-  406: QuokkaErrorCode.NOT_ACCEPTABLE,
-  410: QuokkaErrorCode.GONE,
-  411: QuokkaErrorCode.LENGTH_REQUIRED,
-  413: QuokkaErrorCode.PAYLOAD_TOO_LARGE,
-  415: QuokkaErrorCode.UNSUPPORTED_MEDIA_TYPE,
-  426: QuokkaErrorCode.UPGRADE_REQUIRED,
-  428: QuokkaErrorCode.PRECONDITION_REQUIRED,
-  431: QuokkaErrorCode.HEADERS_TOO_LARGE,
-  451: QuokkaErrorCode.LEGAL_BLOCKED,
-  501: QuokkaErrorCode.NOT_IMPLEMENTED,
-  511: QuokkaErrorCode.NETWORK_AUTH_REQUIRED,
+export const Response_Status_Code: Record<number, BlazionErrorCode> = {
+  400: BlazionErrorCode.BAD_REQUEST,
+  401: BlazionErrorCode.UNAUTHORIZED,
+  403: BlazionErrorCode.FORBIDDEN,
+  404: BlazionErrorCode.NOT_FOUND,
+  405: BlazionErrorCode.METHOD_NOT_ALLOWED,
+  408: BlazionErrorCode.TIMEOUT,
+  409: BlazionErrorCode.CONFLICT,
+  422: BlazionErrorCode.VALIDATION_ERROR,
+  429: BlazionErrorCode.TOO_MANY_REQUESTS,
+  500: BlazionErrorCode.SERVER_ERROR,
+  502: BlazionErrorCode.BAD_GATEWAY,
+  503: BlazionErrorCode.SERVICE_UNAVAILABLE,
+  504: BlazionErrorCode.GATEWAY_TIMEOUT,
+  406: BlazionErrorCode.NOT_ACCEPTABLE,
+  410: BlazionErrorCode.GONE,
+  411: BlazionErrorCode.LENGTH_REQUIRED,
+  413: BlazionErrorCode.PAYLOAD_TOO_LARGE,
+  415: BlazionErrorCode.UNSUPPORTED_MEDIA_TYPE,
+  426: BlazionErrorCode.UPGRADE_REQUIRED,
+  428: BlazionErrorCode.PRECONDITION_REQUIRED,
+  431: BlazionErrorCode.HEADERS_TOO_LARGE,
+  451: BlazionErrorCode.LEGAL_BLOCKED,
+  501: BlazionErrorCode.NOT_IMPLEMENTED,
+  511: BlazionErrorCode.NETWORK_AUTH_REQUIRED,
 };
 
 export const getBodyStrategies = (headers: Headers) => [
