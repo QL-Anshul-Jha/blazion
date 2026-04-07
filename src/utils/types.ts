@@ -16,7 +16,7 @@ export interface ProgressEventData {
   progress: number;
 }
 
-export interface QuokkaFeatureOptions {
+export interface BlazionFeatureOptions {
   retry?: number;
   retryDelay?: number;
   qCache?: boolean;

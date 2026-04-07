@@ -1,10 +1,11 @@
-import { QuokkaRequestConfig, QuokkaFetchError } from '../utils/types';
-import { QuokkaErrorCode } from '../utils/enums';
+import { BlazionErrorCode } from "../utils/enums";
+import { BlazionError, BlazionRequestConfig } from "../utils/types";
+
 
 // 1. Download Progress with native ReadableStream (Fetch API)
 export const trackDownloadProgress = (
   response: Response,
-  onDownloadProgress: NonNullable<QuokkaRequestConfig['onDownloadProgress']>
+  onDownloadProgress: NonNullable<BlazionRequestConfig['onDownloadProgress']>
 ): Response => {
   if (!response.body) return response;
 
@@ -43,14 +44,14 @@ export const trackDownloadProgress = (
 // 2. Upload Progress parsing Native XHR representation to mimic native fetch
 export const executeXhrWithUploadProgress = (
   url: string,
-  config: QuokkaRequestConfig,
+  config: BlazionRequestConfig,
   finalBody: BodyInit | null | undefined
 ): Promise<Response> => {
   return new Promise((resolve, reject) => {
     // If not in a browser/XHR environment, gracefully reject
     if (typeof XMLHttpRequest === 'undefined') {
-      return reject(new QuokkaFetchError({
-        code: QuokkaErrorCode.NOT_IMPLEMENTED,
+      return reject(new BlazionError({
+        code: BlazionErrorCode.NOT_IMPLEMENTED,
         message: 'Upload progress relies on XMLHttpRequest which is not available in this environment.',
         url,
         method: config.method || 'GET',
@@ -60,7 +61,7 @@ export const executeXhrWithUploadProgress = (
 
     const xhr = new XMLHttpRequest();
     xhr.open(config.method || 'GET', url, true);
-    
+
     // We intentionally map the XHR response strictly to fetch Blob pattern. 
     // This allows `new Response(blob)` to naturally ingest it for our downstream JSON/text parse
     xhr.responseType = 'blob';
@@ -124,8 +125,8 @@ export const executeXhrWithUploadProgress = (
     };
 
     xhr.onerror = () => {
-      reject(new QuokkaFetchError({
-        code: QuokkaErrorCode.NETWORK_ERROR,
+      reject(new BlazionError({
+        code: BlazionErrorCode.NETWORK_ERROR,
         message: 'Network Error during XHR execution',
         url,
         method: config.method || 'GET',
@@ -134,8 +135,8 @@ export const executeXhrWithUploadProgress = (
     };
 
     xhr.onabort = () => {
-      reject(new QuokkaFetchError({
-        code: QuokkaErrorCode.ABORT,
+      reject(new BlazionError({
+        code: BlazionErrorCode.ABORT,
         message: 'Request aborted manually',
         url,
         method: config.method || 'GET',
@@ -144,15 +145,15 @@ export const executeXhrWithUploadProgress = (
     };
 
     xhr.ontimeout = () => {
-      reject(new QuokkaFetchError({
-        code: QuokkaErrorCode.TIMEOUT,
+      reject(new BlazionError({
+        code: BlazionErrorCode.TIMEOUT,
         message: 'Request timed out',
         url,
         method: config.method || 'GET',
         config
       }));
     };
-    
+
     // Wire native timeout bounds to XHR directly if requested 
     if (config.timeout) {
       xhr.timeout = config.timeout;
