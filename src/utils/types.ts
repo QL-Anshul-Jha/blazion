@@ -21,12 +21,17 @@ export interface BlazionFeatureOptions {
   retryDelay?: number;
   qCache?: boolean;
   qCacheTime?: number;
+}
+
+export interface BlazionProgressOptions {
   onUploadProgress?: (event: ProgressEventData) => void;
   onDownloadProgress?: (event: ProgressEventData) => void;
 }
 
 // Used for overriding individual request options
-export type FetchOptions = Omit<RequestInit, 'method' | 'body'> & BlazionFeatureOptions & {
+export type FetchOptions = Omit<RequestInit, 'method' | 'body'> & 
+  BlazionFeatureOptions & 
+  BlazionProgressOptions & {
   method?: HttpMethod;
   query?: QueryParams;
   body?: RequestPayload;

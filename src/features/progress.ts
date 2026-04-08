@@ -1,5 +1,4 @@
-import { BlazionErrorCode } from "../utils/enums";
-import { BlazionError, BlazionRequestConfig } from "../utils/types";
+import { BlazionErrorCode, BlazionError, BlazionRequestConfig } from '../utils';
 
 
 // 1. Download Progress with native ReadableStream (Fetch API)
@@ -60,7 +59,7 @@ export const executeXhrWithUploadProgress = (
     }
 
     const xhr = new XMLHttpRequest();
-    xhr.open(config.method || 'GET', url, true);
+    xhr.open(config.method || 'GET', url, true); // third arg true for enabling async
 
     // We intentionally map the XHR response strictly to fetch Blob pattern. 
     // This allows `new Response(blob)` to naturally ingest it for our downstream JSON/text parse

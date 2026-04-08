@@ -1,12 +1,10 @@
-import { HttpMethod, ResponseType, BlazionErrorCode } from './utils/enums';
-import { FetchOptions, JSONValue, BlazionConfig, BlazionInterceptors, BlazionRequestConfig, InterceptedResponseData, BlazionCallable, BlazionRequestPayload, BlazionError } from './utils/types';
-import { buildQueryString, mergeHeaders, parseResponseBody, handleResponseError, resolvePayloadAndHeaders, getTimeoutController, resolveFinalSignal } from './utils/helpers';
-import { trackDownloadProgress, executeXhrWithUploadProgress } from './features/progress';
-import { BlazionCache } from './features/cache';
-import { executeWithRetry } from './features/retry';
+import {
+  HttpMethod, ResponseType, BlazionErrorCode,
+  FetchOptions, JSONValue, BlazionConfig, BlazionInterceptors, BlazionRequestConfig, InterceptedResponseData, BlazionCallable, BlazionRequestPayload, BlazionError,
+  buildQueryString, mergeHeaders, parseResponseBody, handleResponseError, resolvePayloadAndHeaders, getTimeoutController, resolveFinalSignal, hasProgressCallbacks
+} from './utils';
+import { trackDownloadProgress, executeXhrWithUploadProgress, BlazionCache, executeWithRetry } from './features';
 
-export * from './utils/types';
-export * from './utils/enums';
 
 // Default constants
 const DEFAULT_RETRY_COUNT = 0;
@@ -31,6 +29,9 @@ class BlazionInternal {
   };
 
   constructor(config?: BlazionConfig) {
+
+    if (config && hasProgressCallbacks(config)) console.warn('[Blazion] Progress handlers must be passed per-request, not at the instance level.');
+
     this.baseURL = config?.baseURL || '';
     this.defaultHeaders = config?.headers || {
       'Accept': 'application/json, text/plain, */*',
