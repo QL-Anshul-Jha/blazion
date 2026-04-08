@@ -5,6 +5,9 @@ import {
 } from './utils';
 import { trackDownloadProgress, executeXhrWithUploadProgress, BlazionCache, executeWithRetry } from './features';
 
+export * from './utils';
+
+
 
 // Default constants
 const DEFAULT_RETRY_COUNT = 0;

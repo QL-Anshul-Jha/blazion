@@ -1,4 +1,4 @@
-import { BlazionErrorCode, BlazionError, BlazionRequestConfig } from '../utils';
+import { BlazionErrorCode, BlazionError, BlazionRequestConfig, ProgressEventData } from '../utils';
 
 
 // 1. Download Progress with native ReadableStream (Fetch API)
@@ -47,11 +47,12 @@ export const executeXhrWithUploadProgress = (
   finalBody: BodyInit | null | undefined
 ): Promise<Response> => {
   return new Promise((resolve, reject) => {
+
     // If not in a browser/XHR environment, gracefully reject
     if (typeof XMLHttpRequest === 'undefined') {
       return reject(new BlazionError({
         code: BlazionErrorCode.NOT_IMPLEMENTED,
-        message: 'Upload progress relies on XMLHttpRequest which is not available in this environment.',
+        message: 'Upload progress relies on XMLHttpRequest which is not available in full execution environments.',
         url,
         method: config.method || 'GET',
         config
@@ -59,107 +60,63 @@ export const executeXhrWithUploadProgress = (
     }
 
     const xhr = new XMLHttpRequest();
-    xhr.open(config.method || 'GET', url, true); // third arg true for enabling async
+    xhr.open(config.method || 'GET', url, true); // Third arg as true to enable it as async
+    xhr.responseType = 'blob'; // Forces XHR to output a Native Blob for standard Fetch mapping
 
-    // We intentionally map the XHR response strictly to fetch Blob pattern. 
-    // This allows `new Response(blob)` to naturally ingest it for our downstream JSON/text parse
-    xhr.responseType = 'blob';
-
-    // Transfer headers cleanly
+    // 1. Header Injection
     if (config.headers) {
-      for (const [key, value] of Object.entries(config.headers)) {
-        xhr.setRequestHeader(key, value as string);
-      }
+      Object.entries(config.headers).forEach(([key, value]) => xhr.setRequestHeader(key, value as string));
     }
 
+    // 2. Progress Dispatcher Factory
+    const bindProgress = (event: ProgressEvent, callback?: (data: ProgressEventData) => void) => {
+      if (event.lengthComputable && callback) {
+        const safeTotal = Math.max(event.total, event.loaded); // Prevent edge-case inflation
+        callback({
+          loaded: event.loaded,
+          total: safeTotal,
+          progress: safeTotal ? Number((event.loaded / safeTotal).toFixed(4)) : 0
+        });
+      }
+    };
+
     if (config.onUploadProgress && xhr.upload) {
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          config.onUploadProgress!({
-            loaded: event.loaded,
-            total: event.total,
-            progress: Number((event.loaded / event.total).toFixed(4))
-          });
-        }
-      };
+      xhr.upload.onprogress = (e) => bindProgress(e, config.onUploadProgress);
     }
 
     if (config.onDownloadProgress) {
-      xhr.onprogress = (event) => {
-        if (event.lengthComputable) {
-          config.onDownloadProgress!({
-            loaded: event.loaded,
-            total: event.total,
-            progress: Number((event.loaded / event.total).toFixed(4))
-          });
-        }
-      };
+      xhr.onprogress = (e) => bindProgress(e, config.onDownloadProgress);
     }
 
-    // Bind abort controllers Native Signal to XHR instance
-    if (config.signal) {
-      config.signal.addEventListener('abort', () => {
-        xhr.abort();
-      });
-    }
+    // 3. Signal & Timeout Constraints
+    config.signal?.addEventListener('abort', () => xhr.abort());
+    if (config.timeout) xhr.timeout = config.timeout;
 
+    // 4. Response Resolution Mapper
     xhr.onload = () => {
-      // Mock the native `fetch` headers 1:1
       const responseHeaders = new Headers();
       xhr.getAllResponseHeaders().trim().split(/[\r\n]+/).forEach((line) => {
-        const parts = line.split(': ');
-        const header = parts.shift();
-        const value = parts.join(': ');
-        if (header) responseHeaders.append(header, value);
+        const [header, ...valParts] = line.split(': ');
+        if (header) responseHeaders.append(header, valParts.join(': '));
       });
 
-      // Pass the fully native Blob into a genuine Response constructor
-      const response = new Response(xhr.response as Blob, {
+      resolve(new Response(xhr.response as Blob, {
         status: xhr.status,
         statusText: xhr.statusText,
         headers: responseHeaders
-      });
-
-      resolve(response);
-    };
-
-    xhr.onerror = () => {
-      reject(new BlazionError({
-        code: BlazionErrorCode.NETWORK_ERROR,
-        message: 'Network Error during XHR execution',
-        url,
-        method: config.method || 'GET',
-        config
       }));
     };
 
-    xhr.onabort = () => {
-      reject(new BlazionError({
-        code: BlazionErrorCode.ABORT,
-        message: 'Request aborted manually',
-        url,
-        method: config.method || 'GET',
-        config
-      }));
+    // 5. Error Interception Factory
+    const handleRejection = (code: BlazionErrorCode, message: string) => () => {
+      reject(new BlazionError({ code, message, url, method: config.method || 'GET', config }));
     };
 
-    xhr.ontimeout = () => {
-      reject(new BlazionError({
-        code: BlazionErrorCode.TIMEOUT,
-        message: 'Request timed out',
-        url,
-        method: config.method || 'GET',
-        config
-      }));
-    };
+    xhr.onerror = handleRejection(BlazionErrorCode.NETWORK_ERROR, 'Network Error during XHR execution');
+    xhr.onabort = handleRejection(BlazionErrorCode.ABORT, 'Request aborted manually');
+    xhr.ontimeout = handleRejection(BlazionErrorCode.TIMEOUT, 'Request timed out');
 
-    // Wire native timeout bounds to XHR directly if requested 
-    if (config.timeout) {
-      xhr.timeout = config.timeout;
-    }
-
-    // Support FormData and standard strings out of the box dynamically mapping to Native XHR body semantics
-    // NOTE: Native `BodyInit` does not cover all XHR capabilities natively but aligns strongly enough 
+    // Execute with Native formatting fallback support
     xhr.send((finalBody as XMLHttpRequestBodyInit) || null);
   });
 };
