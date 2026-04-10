@@ -4,12 +4,14 @@ export const trackDownloadProgress = (
   response: Response,
   onDownloadProgress: NonNullable<BlazionRequestConfig['onDownloadProgress']>
 ): Response => {
+  // --- 1. RESPONSE VALIDATION ---
   if (!response.body) return response;
 
   const contentLength = response.headers.get('content-length');
   const total = contentLength ? parseInt(contentLength, 10) : 0;
   let loaded = 0;
 
+  // --- 2. STREAM CONSUMPTION ---
   const reader = response.body.getReader();
   const stream = new ReadableStream({
     async start(controller) {

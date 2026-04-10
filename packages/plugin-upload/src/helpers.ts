@@ -5,6 +5,7 @@ export const executeXhrWithUploadProgress = (
   config: BlazionRequestConfig,
   finalBody: BodyInit | null | undefined
 ): Promise<Response> => {
+  // --- 1. ENVIRONMENT CHECK ---
   return new Promise((resolve, reject) => {
     if (typeof XMLHttpRequest === 'undefined') {
       return reject(new BlazionError({
@@ -16,6 +17,7 @@ export const executeXhrWithUploadProgress = (
       }));
     }
 
+    // --- 2. XHR SETUP ---
     const xhr = new XMLHttpRequest();
     xhr.open(config.method || 'GET', url, true);
     xhr.responseType = 'blob';
@@ -39,9 +41,11 @@ export const executeXhrWithUploadProgress = (
       xhr.upload.onprogress = (e) => bindProgress(e, config.onUploadProgress);
     }
 
+    // --- 3. ABORT & TIMEOUT ---
     config.signal?.addEventListener('abort', () => xhr.abort());
     if (config.timeout) xhr.timeout = config.timeout;
 
+    // --- 4. RESPONSE HANDLER ---
     xhr.onload = () => {
       const responseHeaders = new Headers();
       xhr.getAllResponseHeaders().trim().split(/[\r\n]+/).forEach((line) => {
@@ -60,9 +64,9 @@ export const executeXhrWithUploadProgress = (
       reject(new BlazionError({ code, message, url, method: config.method || 'GET', config }));
     };
 
-    xhr.onerror = handleRejection(BlazionErrorCode.NETWORK_ERROR, 'Network Error during XHR execution');
-    xhr.onabort = handleRejection(BlazionErrorCode.ABORT, 'Request aborted manually');
-    xhr.ontimeout = handleRejection(BlazionErrorCode.TIMEOUT, 'Request timed out');
+    xhr.onerror = handleRejection('NETWORK_ERROR', 'Network Error');
+    xhr.onabort = handleRejection('ABORT_ERROR', 'Aborted');
+    xhr.ontimeout = handleRejection('TIMEOUT_ERROR', 'Timed out');
 
     xhr.send((finalBody as XMLHttpRequestBodyInit) || null);
   });

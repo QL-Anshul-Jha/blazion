@@ -3,6 +3,7 @@ import { CacheOptions } from './types';
 import { BlazionCache } from './helpers';
 
 export const CachePlugin = (options?: CacheOptions): BlazionPlugin => {
+  // --- 1. PLUGIN DEFINITION ---
   return {
     name: BlazionPluginName.CACHE,
     install(instance: BlazionInternalPublic) {
@@ -11,9 +12,10 @@ export const CachePlugin = (options?: CacheOptions): BlazionPlugin => {
       const globalCacheEnabled = options?.globalCacheEnabled ?? instance.config.qCache ?? false;
       const globalCacheTime = options?.globalCacheTime ?? instance.config.qCacheTime ?? 300000;
 
+      // --- 2. CACHE INITIALIZATION ---
       instance.clearCacheFn = () => cache.clear();
 
-      // Wrap Execution with Cache check
+      // --- 3. EXECUTION WRAPPER ---
       const currentWrapper = instance.executionWrapper;
 
       instance.executionWrapper = async <T = InterceptedResponseData>(executor: () => Promise<T>, config: BlazionRequestConfig): Promise<T> => {
@@ -28,7 +30,7 @@ export const CachePlugin = (options?: CacheOptions): BlazionPlugin => {
           if (cachedData !== undefined) return cachedData as T;
         }
 
-        // Execute downstream (either standard fetch or another wrapper like retry)
+        // Execute downstream
         const data = currentWrapper ? await (currentWrapper(executor, config) as Promise<T>) : await executor();
 
         if (isCacheEnabled && method === HttpMethod.GET) {

@@ -3,11 +3,13 @@ import { trackDownloadProgress } from './helpers';
 import './types'; // Ensure module augmentation is loaded
 
 export const DownloadPlugin = (): BlazionPlugin => {
+  // --- 1. PLUGIN DEFINITION ---
   return {
     name: BlazionPluginName.DOWNLOAD,
     install(instance: BlazionInternalPublic) {
       if (typeof window === 'undefined') return;
 
+      // --- 2. ENGINE ADAPTER ---
       const currentAdapter = instance.engineAdapter;
 
       instance.engineAdapter = async (url: string, config: BlazionRequestConfig, body: BodyInit | null | undefined, defaultFetch: typeof fetch) => {

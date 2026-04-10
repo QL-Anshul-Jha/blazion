@@ -2,12 +2,13 @@ import { BlazionError } from '@blazion/core';
 
 const MAX_RETRY_DELAY = 30000;
 
-// Execute a function with exponential backoff retries
+// Execute with exponential backoff
 export const executeWithRetry = async <T>(
   fn: () => Promise<T>,
   retryCount: number,
   retryDelay: number
 ): Promise<T> => {
+  // --- 1. RETRY LOOP ---
   let lastError: BlazionError | Error | null = null;
 
   for (let attempt = 0; attempt <= retryCount; attempt++) {
