@@ -20,6 +20,7 @@
     "@blazion/core": ">=1.0.0"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc --build && tsup",
+    "lint": "eslint src --fix"
   }
 }

@@ -21,15 +21,15 @@ export function createBlazion(config: BlazionConfig): BlazionCallable {
   const finalCallable = Object.assign(callable, {
     onRequest: (handler: (config: BlazionRequestConfig) => BlazionRequestConfig | Promise<BlazionRequestConfig>) => {
       instance.interceptors.request.push(handler);
-      return finalCallable as never;
+      return finalCallable;
     },
     onResponse: (handler: (data: InterceptedResponseData, response: Response) => InterceptedResponseData | Promise<InterceptedResponseData>) => {
       instance.interceptors.response.push(handler);
-      return finalCallable as never;
+      return finalCallable;
     },
     onError: (handler: (error: Error) => Promise<void> | void) => {
       instance.interceptors.error.push(handler);
-      return finalCallable as never;
+      return finalCallable;
     },
     clearCache: () => {
       instance.clearCache();
@@ -40,13 +40,11 @@ export function createBlazion(config: BlazionConfig): BlazionCallable {
       }
       plugin.install(instance);
       instance.installedPlugins.add(plugin.name);
-      return finalCallable as never;
+      return finalCallable;
     },
     create: (config: BlazionConfig) => createBlazion(config)
-  });
+  }) as BlazionCallable;
 
-  return finalCallable as never;
+  return finalCallable;
 }
 
-const blazion = createBlazion({ baseURL: '' });
-export default blazion;

@@ -3,13 +3,21 @@
     "target": "ES2022",
     "module": "CommonJS",
     "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@blazion/core": ["packages/core/src/index.ts"]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/test.ts", "src/demo.ts", "src/layman_demo.ts"]
+  "exclude": ["packages/**/tsup.config.ts", "**/dist/*"],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/plugin-cache" },
+    { "path": "packages/plugin-retry" },
+    { "path": "packages/plugin-download" },
+    { "path": "packages/plugin-upload" }
+  ]
 }

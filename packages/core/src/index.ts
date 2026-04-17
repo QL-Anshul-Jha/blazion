@@ -1,6 +1,7 @@
 export * from './utils';
 export * from './engine';
-export { createBlazion } from './instance';
+import { createBlazion } from './instance';
+export { createBlazion };
 
-import blazion from './instance';
+const blazion = createBlazion({ baseURL: '' });
 export default blazion;

@@ -23,7 +23,8 @@
     "zero-dependency"
   ],
   "scripts": {
-    "build": "tsup"
+    "build": "tsc --build && tsup",
+    "lint": "eslint src --fix"
   },
   "devDependencies": {
     "tsup": "^8.5.1"
