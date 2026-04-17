@@ -3,8 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "composite": true,
-    "declaration": true
+    "removeComments": true,
+    "skipLibCheck": true
   },
   "include": ["src/**/*"]
 }

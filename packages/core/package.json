@@ -2,22 +2,30 @@
   "name": "@blazion/core",
   "version": "1.0.0",
   "description": "Core engine for Blazion — a lightweight, strictly-typed fetch wrapper",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "default": "./dist/index.cjs"
     }
   },
   "sideEffects": false,
   "files": [
-    "dist/**/*.js",
-    "dist/**/*.d.ts",
-    "!dist/test.*"
+    "dist"
   ],
-  "keywords": ["blazion", "fetch", "http", "api", "typescript", "zero-dependency"],
+  "keywords": [
+    "blazion",
+    "fetch",
+    "http",
+    "api",
+    "typescript",
+    "zero-dependency"
+  ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsup"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1"
   }
 }
