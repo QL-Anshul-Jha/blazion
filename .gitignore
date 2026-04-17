@@ -7,3 +7,4 @@ src/test.ts
 src/demo.ts
 verdaccio.log
 .npmrc
+.eslintcache

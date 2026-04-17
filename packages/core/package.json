@@ -20,7 +20,13 @@
     "http",
     "api",
     "typescript",
-    "zero-dependency"
+    "zero-dependency",
+    "no-third-party",
+    "no-deps",
+    "third-party-free",
+    "fetch-with-retry",
+    "fetch-with-cache",
+    "fetch-with-timeout"
   ],
   "scripts": {
     "build": "tsc --build && tsup",
