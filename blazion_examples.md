@@ -127,21 +127,46 @@ console.log(posts[0].title); // Full IDE completion!
 ---
 
 ## 6. Elegant Error Handling
-Catch and inspect errors with the structured `BlazionError`.
+Catch and inspect errors with the structured `BlazionError` class.
 
 ```typescript
-import { BlazionError } from '@blazion/core';
+import { BlazionError, BlazionErrorCode } from '@blazion/core';
 
 try {
   await api({ url: '/protected-resource', method: 'GET' });
 } catch (error) {
   if (error instanceof BlazionError) {
     console.log(`Status Code: ${error.status}`);
-    console.log(`Internal Code: ${error.code}`); // e.g., 'ERR_UNAUTHORIZED'
+    
+    // Use the error code for specific logic
+    if (error.code === BlazionErrorCode.UNAUTHORIZED) {
+      console.log('User needs to log in again.');
+    }
     
     if (error.isTimeoutError) {
       console.log('The request took too long!');
     }
   }
 }
+```
+
+---
+
+## 7. Global Error Listeners (Monitoring)
+Use `onError` to capture every failure in your app for logging or analytics. This captures network failures, API errors, and even errors inside your interceptors.
+
+```typescript
+api.onError((error) => {
+  // Post error to your internal logging service
+  myLogger.log({
+    message: error.message,
+    url: error.url,
+    timestamp: error.timestamp,
+    requestId: error.requestId
+  });
+
+  if (error.isNetworkError) {
+    showGlobalNotification('Check your internet connection!');
+  }
+});
 ```

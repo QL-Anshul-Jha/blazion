@@ -40,6 +40,11 @@ api.onRequest((config) => {
   config.headers = { ...config.headers, Authorization: 'Bearer YOUR_TOKEN' };
   return config;
 });
+
+// Capture all errors globally (logging, analytics, etc.)
+api.onError((error) => {
+  console.error(`Request failed: ${error.url}`, error);
+});
 ```
 
 ### 3. Make a Request
