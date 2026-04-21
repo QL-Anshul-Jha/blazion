@@ -1,6 +1,6 @@
 import {
-  ResponseType, BlazionErrorCode,
-  FetchOptions, BlazionConfig, BlazionInterceptors, BlazionRequestConfig, InterceptedResponseData, BlazionError,
+  HttpMethod, ResponseType, BlazionErrorCode,
+  FetchOptions, BlazionConfig, BlazionInterceptors, BlazionRequestConfig, InterceptedResponseData, BlazionError, BlazionErrorParams,
   buildQueryString, mergeHeaders, parseResponseBody, handleResponseError, resolvePayloadAndHeaders, getTimeoutController, resolveFinalSignal,
   BlazionInternalPublic
 } from './utils';
@@ -33,100 +33,109 @@ export class BlazionInternal implements BlazionInternalPublic {
   public async request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
     const { baseURL, headers: globalHeaders, timeout: globalTimeout, responseType: globalResponseType } = this.config;
 
-    // --- 1. CONFIGURATION SETUP ---
-    let config: BlazionRequestConfig = {
-      url: baseURL + endpoint,
-      ...options,
-      headers: mergeHeaders(globalHeaders as HeadersInit, options.headers),
+    const executeRequest = async (): Promise<T> => {
+      // --- 1. CONFIGURATION SETUP ---
+      if (!endpoint && !baseURL) {
+        throw new Error('Target URL of the request is not defined.');
+      }
+      const normalizedMethod = (options.method || 'GET').toUpperCase() as HttpMethod;
+      let config: BlazionRequestConfig = {
+        url: baseURL + endpoint,
+        ...options,
+        method: normalizedMethod,
+        headers: mergeHeaders(globalHeaders as HeadersInit, options.headers),
+      };
+
+      // --- 2. REQUEST INTERCEPTOR PIPELINE ---
+      for (const interceptor of this.interceptors.request) {
+        config = await interceptor(config);
+      }
+
+      const {
+        url, query, timeout, responseType, body: rawBody,
+        ...customOptions
+      } = config;
+
+      // --- 3. RESOLVE RETRY & CACHE CONFIG ---
+      const finalTimeout = timeout ?? globalTimeout;
+
+      // --- 5. QUERY PARAMETERS ---
+      const qs = buildQueryString(query);
+      const finalUrl = qs ? `${url}?${qs}` : url;
+
+      // --- 6. HEADERS ---
+      const headers = new Headers(customOptions.headers);
+
+      // --- 7. PAYLOADS & CONTENT-TYPE ---
+      const finalBody = resolvePayloadAndHeaders(rawBody, headers);
+
+      // --- 8. EXECUTE WITH WRAPPER/ADAPTER ---
+      const executeFetch = async (): Promise<T> => {
+        const { controller, timeoutSignal, timeoutId } = getTimeoutController(finalTimeout);
+        const finalSignal = resolveFinalSignal(finalTimeout, customOptions.signal, controller, timeoutSignal);
+
+        try {
+          let response: Response;
+
+          if (this.engineAdapter) {
+            response = await this.engineAdapter(finalUrl, { ...config, signal: finalSignal }, finalBody, fetch);
+          } else {
+            response = await fetch(finalUrl, { ...customOptions, method: normalizedMethod, headers, body: finalBody, signal: finalSignal });
+          }
+
+          const expectedType = responseType || (globalResponseType as ResponseType);
+          let data = await parseResponseBody(response, expectedType);
+          handleResponseError(response, expectedType, data, config);
+
+          for (const interceptor of this.interceptors.response) {
+            data = await interceptor(data, response);
+          }
+
+          return data as Extract<typeof data, T>;
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId);
+        }
+      };
+
+      if (this.executionWrapper) {
+        return this.executionWrapper(executeFetch, config);
+      }
+
+      return executeFetch();
     };
 
-    // --- 2. REQUEST INTERCEPTOR PIPELINE ---
-    for (const interceptor of this.interceptors.request) {
-      config = await interceptor(config);
-    }
+    try {
+      return await executeRequest();
+    } catch (e) {
+      let qfError: BlazionError;
 
-    const {
-      url, query, timeout, responseType, body: rawBody,
-      ...customOptions
-    } = config;
-
-    // --- 3. RESOLVE RETRY & CACHE CONFIG ---
-    const finalTimeout = timeout ?? globalTimeout;
-
-    // --- 5. QUERY PARAMETERS ---
-    const qs = buildQueryString(query);
-    const finalUrl = qs ? `${url}?${qs}` : url;
-
-    // --- 6. HEADERS ---
-    const headers = new Headers(customOptions.headers);
-
-    // --- 7. PAYLOADS & CONTENT-TYPE ---
-    const finalBody = resolvePayloadAndHeaders(rawBody, headers);
-
-    // --- 8. EXECUTE WITH RETRY ---
-    const executeFetch = async (): Promise<T> => {
-      const { controller, timeoutSignal, timeoutId } = getTimeoutController(finalTimeout);
-      const finalSignal = resolveFinalSignal(finalTimeout, customOptions.signal, controller, timeoutSignal);
-
-      try {
-        let response: Response;
-
-        if (this.engineAdapter) {
-          response = await this.engineAdapter(finalUrl, { ...config, signal: finalSignal }, finalBody, fetch);
-        } else {
-          response = await fetch(finalUrl, { ...customOptions, headers, body: finalBody, signal: finalSignal });
-        }
-
-        const expectedType = responseType || (globalResponseType as ResponseType);
-
-        let data = await parseResponseBody(response, expectedType);
-        handleResponseError(response, expectedType, data, config);
-
-        for (const interceptor of this.interceptors.response) {
-          data = await interceptor(data, response);
-        }
-
-        return data as Extract<typeof data, T>;
-      } catch (e) {
-        if (e instanceof BlazionError) throw e;
-
+      if (e instanceof BlazionError) {
+        qfError = e;
+      } else {
         const error = e as Error;
-        let code: BlazionErrorCode = BlazionErrorCode.NETWORK_ERROR;
-        let message = error.message;
+        const qfErrorParams: BlazionErrorParams = {
+          code: BlazionErrorCode.NETWORK_ERROR,
+          message: error.message,
+          url: baseURL + endpoint,
+          method: options.method || 'GET',
+          cause: error,
+          config: { url: baseURL + endpoint, ...options }
+        };
 
         if (error.name === 'AbortError') {
-          // Distinguish timeout abort vs manual abort:
-          // If we have a timeout controller and it was the one that aborted, it's a timeout.
-          // Otherwise, the user manually aborted via their own signal.
-          const isTimeoutAbort = controller && controller.signal.aborted;
-          code = isTimeoutAbort ? BlazionErrorCode.TIMEOUT : BlazionErrorCode.ABORT;
-          message = isTimeoutAbort ? `Request timed out after ${finalTimeout}ms` : 'Request was manually aborted';
+          qfErrorParams.code = BlazionErrorCode.ABORT;
+          qfErrorParams.message = 'Request was manually aborted';
         }
 
-        const qfError = new BlazionError({
-          code,
-          message,
-          url: finalUrl,
-          method: config.method || 'GET',
-          cause: error,
-          config
-        });
-
-        for (const interceptor of this.interceptors.error) {
-          await interceptor(qfError);
-        }
-
-        throw qfError;
-      } finally {
-        if (timeoutId) clearTimeout(timeoutId);
+        qfError = new BlazionError(qfErrorParams);
       }
-    };
 
-    if (this.executionWrapper) {
-      return this.executionWrapper(executeFetch, config);
+      for (const interceptor of this.interceptors.error) {
+        await interceptor(qfError);
+      }
+
+      throw qfError;
     }
-
-    return executeFetch();
   }
 
   public clearCache(): void {

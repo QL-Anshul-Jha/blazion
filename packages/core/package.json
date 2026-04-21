@@ -1,6 +1,6 @@
 {
   "name": "@blazion/core",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Core engine for Blazion — a lightweight, strictly-typed fetch wrapper",
   "main": "dist/index.cjs",
   "types": "dist/index.d.ts",
