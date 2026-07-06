@@ -14,7 +14,7 @@ Blazion is built for developers who want the power of Axios with the footprint o
 
 - **⚡ Zero Dependency**: Uses native `fetch` and standard Web APIs.
 - **🛡️ Strictly Typed**: Integrated TypeScript types; no `any`, no `unknown`.
-- **🧩 Modular Plugins**: Pay-only-for-what-you-need (Retry, Cache, Progress).
+- **🧩 Modular Plugins**: Pay-only-for-what-you-need (Retry, Cache, Auth-refresh, Progress).
 - **🌊 Fluent API**: Clean lifecycle hooks (`onRequest`, `onResponse`, `onError`).
 - **📦 Payload Auto-Detection**: Support for JSON, FormData, and Blobs out of the box.
 
@@ -68,9 +68,11 @@ Extend Blazion with optional plugins:
 ```typescript
 import { RetryPlugin } from '@blazion/plugin-retry';
 import { CachePlugin } from '@blazion/plugin-cache';
+import { AuthPlugin } from '@blazion/plugin-auth';
 
 api.use(RetryPlugin());
 api.use(CachePlugin());
+api.use(AuthPlugin({ refreshToken: async () => { /* refresh & store a new token */ } }));
 
 // Use plugin features in any request
 await api({

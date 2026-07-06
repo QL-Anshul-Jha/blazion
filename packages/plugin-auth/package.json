@@ -1,7 +1,7 @@
 {
-  "name": "@blazion/plugin-cache",
-  "version": "1.0.2",
-  "description": "Cache plugin for Blazion — in-memory response caching with TTL",
+  "name": "@blazion/plugin-auth",
+  "version": "1.0.0",
+  "description": "Auth-refresh plugin for Blazion — single-flight token refresh and retry on 401",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -18,9 +18,9 @@
   ],
   "keywords": [
     "blazion",
-    "cache",
-    "fetch",
-    "ttl",
+    "auth",
+    "token-refresh",
+    "401",
     "plugin"
   ],
   "peerDependencies": {

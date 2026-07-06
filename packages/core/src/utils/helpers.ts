@@ -24,14 +24,27 @@ export const buildQueryString = (query?: QueryParams): string => {
   ).toString();
 };
 
+// Flatten any HeadersInit shape into a case-normalized record, last value wins.
+// Deliberately does this with plain assignment rather than `new Headers(init)`:
+// the Headers constructor treats same-name-different-casing keys as distinct
+// and *appends* (comma-joins) them instead of letting the later one override.
+export const toHeaderRecord = (init?: HeadersInit): Record<string, string> => {
+  const record: Record<string, string> = {};
+  if (!init) return record;
+
+  const entries: Iterable<[string, string]> = init instanceof Headers || Array.isArray(init)
+    ? init
+    : Object.entries(init);
+
+  for (const [key, value] of entries) {
+    record[key.toLowerCase()] = value;
+  }
+  return record;
+};
+
 // Merge default + custom headers
 export const mergeHeaders = (defaultHeaders: HeadersInit, customHeaders?: HeadersInit): Record<string, string> => {
-  const merged = new Headers(defaultHeaders);
-  const custom = new Headers(customHeaders);
-  custom.forEach((value, key) => merged.set(key, value));
-  const headers: Record<string, string> = {};
-  merged.forEach((value, key) => { headers[key] = value; });
-  return headers;
+  return { ...toHeaderRecord(defaultHeaders), ...toHeaderRecord(customHeaders) };
 };
 
 // Parse response body
@@ -81,7 +94,11 @@ export const resolvePayloadAndHeaders = (rawBody: RequestPayload | undefined | n
 // Create timeout controller
 export const getTimeoutController = (timeout?: number) => {
   const controller = timeout ? new AbortController() : undefined;
-  const timeoutId = timeout ? setTimeout(() => controller?.abort(), timeout) : undefined;
+  // A distinct `TimeoutError` reason lets the caller tell "timed out" apart from
+  // a user-initiated abort — both otherwise surface as an identical AbortError.
+  const timeoutId = timeout
+    ? setTimeout(() => controller?.abort(new DOMException('The operation timed out.', 'TimeoutError')), timeout)
+    : undefined;
   return { controller, timeoutSignal: controller?.signal, timeoutId };
 };
 

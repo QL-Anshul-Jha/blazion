@@ -74,7 +74,7 @@ export const getSignalStrategies = (customSignal: AbortSignal | null | undefined
     'true_true': () => {
       const envSupportsAny = typeof AbortSignal !== 'undefined' && 'any' in AbortSignal;
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-      (!envSupportsAny) && customSignal?.addEventListener('abort', () => controller?.abort());
+      (!envSupportsAny) && customSignal?.addEventListener('abort', () => controller?.abort(customSignal.reason));
 
       return envSupportsAny
         ? AbortSignal.any([customSignal as AbortSignal, timeoutSignal as AbortSignal])

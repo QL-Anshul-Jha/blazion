@@ -8,7 +8,9 @@
     "prepare": "husky",
     "lint": "npm run lint --workspaces",
     "build": "npm run build --workspaces",
-    "start": "node packages/core/dist/test.js"
+    "pretest": "npm run build",
+    "test": "node --import tsx --test $(find packages -path '*/src/*.test.ts')",
+    "start": "tsx packages/core/src/test.ts"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
@@ -17,6 +19,7 @@
     "eslint": "^8.57.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
+    "tsx": "^4.23.0",
     "typescript": "^5.0.0"
   }
 }

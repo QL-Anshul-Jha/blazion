@@ -29,7 +29,42 @@ await api({ url: '/profile', method: 'GET' });
 
 ---
 
-## 2. Reliable Requests (Retry Plugin)
+## 2. Automatic Token Refresh (Auth Plugin)
+When a request comes back `401`, refresh the token once and retry the original request — even if several requests fail at the same time, `refreshToken` only runs once.
+
+```typescript
+import { createBlazion } from '@blazion/core';
+import { AuthPlugin } from '@blazion/plugin-auth';
+
+const api = createBlazion({ baseURL: 'https://api.myapp.com' });
+
+api.onRequest((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
+  return config;
+});
+
+api.use(AuthPlugin({
+  refreshToken: async () => {
+    const res = await fetch('https://api.myapp.com/auth/refresh', {
+      method: 'POST',
+      credentials: 'include'
+    });
+    const { token } = await res.json();
+    localStorage.setItem('token', token);
+  }
+}));
+
+// If this 401s, AuthPlugin refreshes the token and retries once automatically.
+await api({ url: '/profile', method: 'GET' });
+
+// Skip the refresh flow on the refresh endpoint itself to avoid recursion.
+await api({ url: '/auth/refresh', method: 'POST', skipAuthRefresh: true });
+```
+
+---
+
+## 3. Reliable Requests (Retry Plugin)
 Never worry about transient network errors again.
 
 ```typescript
@@ -50,7 +85,7 @@ await api({
 
 ---
 
-## 3. High Performance (Cache Plugin)
+## 4. High Performance (Cache Plugin)
 Optimize your app by caching frequent GET requests.
 
 ```typescript
@@ -71,13 +106,13 @@ await api({
 
 ---
 
-## 4. Interactive Progress (Upload & Download)
+## 5. Interactive Progress (Upload & Download)
 Provide real-time feedback for large file transfers.
 
 ```typescript
 import { createBlazion } from '@blazion/core';
-import { UploadPlugin } from '@blazion/plugin-upload';
-import { DownloadPlugin } from '@blazion/plugin-download';
+import { UploadPlugin } from '@blazion/plugin-upload-progress';
+import { DownloadPlugin } from '@blazion/plugin-download-progress';
 
 const api = createBlazion();
 api.use(UploadPlugin());
@@ -105,7 +140,7 @@ await api({
 
 ---
 
-## 5. Strict Type Safety
+## 6. Strict Type Safety
 Explicitly define your response types for a better developer experience.
 
 ```typescript
@@ -126,7 +161,7 @@ console.log(posts[0].title); // Full IDE completion!
 
 ---
 
-## 6. Elegant Error Handling
+## 7. Elegant Error Handling
 Catch and inspect errors with the structured `BlazionError` class.
 
 ```typescript
@@ -152,7 +187,7 @@ try {
 
 ---
 
-## 7. Global Error Listeners (Monitoring)
+## 8. Global Error Listeners (Monitoring)
 Use `onError` to capture every failure in your app for logging or analytics. This captures network failures, API errors, and even errors inside your interceptors.
 
 ```typescript

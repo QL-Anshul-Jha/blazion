@@ -3,6 +3,7 @@
     "target": "ES2022",
     "module": "CommonJS",
     "declaration": true,
+    "emitDeclarationOnly": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -18,6 +19,7 @@
     { "path": "packages/plugin-cache" },
     { "path": "packages/plugin-retry" },
     { "path": "packages/plugin-download" },
-    { "path": "packages/plugin-upload" }
+    { "path": "packages/plugin-upload" },
+    { "path": "packages/plugin-auth" }
   ]
 }

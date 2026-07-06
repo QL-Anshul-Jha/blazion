@@ -56,6 +56,7 @@ export const BlazionPluginName = {
   RETRY: 'retry',
   UPLOAD: 'upload_progress',
   DOWNLOAD: 'download_progress',
+  AUTH: 'auth',
 } as const;
 
 export type BlazionPluginName = (typeof BlazionPluginName)[keyof typeof BlazionPluginName];

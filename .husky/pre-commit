@@ -16,4 +16,14 @@ if echo "$EMAIL" | grep -qv "$DOMAIN$"; then
   exit 1
 fi
 
-npx lint-staged
+npx lint-staged || exit 1
+
+# ━━━ Build Guard: never let a broken build get committed ━━━
+echo ""
+echo "🔨 Verifying build..."
+if ! npm run build --silent; then
+  echo ""
+  echo "❌ COMMIT BLOCKED — build failed. Fix the errors above before committing."
+  echo ""
+  exit 1
+fi

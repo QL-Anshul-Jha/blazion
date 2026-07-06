@@ -1,7 +1,7 @@
 import {
   HttpMethod, ResponseType, BlazionErrorCode,
   FetchOptions, BlazionConfig, BlazionInterceptors, BlazionRequestConfig, InterceptedResponseData, BlazionError, BlazionErrorParams,
-  buildQueryString, mergeHeaders, parseResponseBody, handleResponseError, resolvePayloadAndHeaders, getTimeoutController, resolveFinalSignal,
+  buildQueryString, mergeHeaders, toHeaderRecord, parseResponseBody, handleResponseError, resolvePayloadAndHeaders, getTimeoutController, resolveFinalSignal,
   BlazionInternalPublic
 } from './utils';
 
@@ -33,20 +33,24 @@ export class BlazionInternal implements BlazionInternalPublic {
   public async request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
     const { baseURL, headers: globalHeaders, timeout: globalTimeout, responseType: globalResponseType } = this.config;
 
-    const executeRequest = async (): Promise<T> => {
-      // --- 1. CONFIGURATION SETUP ---
-      if (!endpoint && !baseURL) {
-        throw new Error('Target URL of the request is not defined.');
-      }
-      const normalizedMethod = (options.method || 'GET').toUpperCase() as HttpMethod;
-      let config: BlazionRequestConfig = {
-        url: baseURL + endpoint,
-        ...options,
-        method: normalizedMethod,
-        headers: mergeHeaders(globalHeaders as HeadersInit, options.headers),
-      };
+    // --- 1. CONFIGURATION SETUP ---
+    if (!endpoint && !baseURL) {
+      throw new Error('Target URL of the request is not defined.');
+    }
+    const initialConfig: BlazionRequestConfig = {
+      url: baseURL + endpoint,
+      ...options,
+      method: (options.method || 'GET').toUpperCase() as HttpMethod,
+      headers: mergeHeaders(globalHeaders as HeadersInit, options.headers),
+    };
 
+    // --- 8. EXECUTE WITH WRAPPER/ADAPTER ---
+    // Re-runs the interceptor pipeline on every invocation, so a plugin that
+    // retries this (retry/cache/auth-refresh) always sends a fresh pass —
+    // e.g. an auth-refresh plugin's retry picks up a newly-refreshed token.
+    const executeAttempt = async (): Promise<T> => {
       // --- 2. REQUEST INTERCEPTOR PIPELINE ---
+      let config: BlazionRequestConfig = { ...initialConfig };
       for (const interceptor of this.interceptors.request) {
         config = await interceptor(config);
       }
@@ -64,48 +68,46 @@ export class BlazionInternal implements BlazionInternalPublic {
       const finalUrl = qs ? `${url}?${qs}` : url;
 
       // --- 6. HEADERS ---
-      const headers = new Headers(customOptions.headers);
+      // Normalize via toHeaderRecord first: constructing `new Headers()` directly
+      // from a record that has case-varying duplicate keys (e.g. a lowercased
+      // global default plus an interceptor re-adding the same header in its
+      // original casing) comma-combines them instead of letting the latter win.
+      const headers = new Headers(toHeaderRecord(customOptions.headers));
 
       // --- 7. PAYLOADS & CONTENT-TYPE ---
       const finalBody = resolvePayloadAndHeaders(rawBody, headers);
 
-      // --- 8. EXECUTE WITH WRAPPER/ADAPTER ---
-      const executeFetch = async (): Promise<T> => {
-        const { controller, timeoutSignal, timeoutId } = getTimeoutController(finalTimeout);
-        const finalSignal = resolveFinalSignal(finalTimeout, customOptions.signal, controller, timeoutSignal);
+      const { controller, timeoutSignal, timeoutId } = getTimeoutController(finalTimeout);
+      const finalSignal = resolveFinalSignal(finalTimeout, customOptions.signal, controller, timeoutSignal);
 
-        try {
-          let response: Response;
+      try {
+        let response: Response;
 
-          if (this.engineAdapter) {
-            response = await this.engineAdapter(finalUrl, { ...config, signal: finalSignal }, finalBody, fetch);
-          } else {
-            response = await fetch(finalUrl, { ...customOptions, method: normalizedMethod, headers, body: finalBody, signal: finalSignal });
-          }
-
-          const expectedType = responseType || (globalResponseType as ResponseType);
-          let data = await parseResponseBody(response, expectedType);
-          handleResponseError(response, expectedType, data, config);
-
-          for (const interceptor of this.interceptors.response) {
-            data = await interceptor(data, response);
-          }
-
-          return data as Extract<typeof data, T>;
-        } finally {
-          if (timeoutId) clearTimeout(timeoutId);
+        if (this.engineAdapter) {
+          response = await this.engineAdapter(finalUrl, { ...config, signal: finalSignal }, finalBody, fetch);
+        } else {
+          response = await fetch(finalUrl, { ...customOptions, headers, body: finalBody, signal: finalSignal });
         }
-      };
 
-      if (this.executionWrapper) {
-        return this.executionWrapper(executeFetch, config);
+        const expectedType = responseType || (globalResponseType as ResponseType);
+        let data = await parseResponseBody(response, expectedType);
+        handleResponseError(response, expectedType, data, config);
+
+        for (const interceptor of this.interceptors.response) {
+          data = await interceptor(data, response);
+        }
+
+        return data as Extract<typeof data, T>;
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
       }
-
-      return executeFetch();
     };
 
     try {
-      return await executeRequest();
+      if (this.executionWrapper) {
+        return await this.executionWrapper(executeAttempt, initialConfig);
+      }
+      return await executeAttempt();
     } catch (e) {
       let qfError: BlazionError;
 
@@ -122,7 +124,10 @@ export class BlazionInternal implements BlazionInternalPublic {
           config: { url: baseURL + endpoint, ...options }
         };
 
-        if (error.name === 'AbortError') {
+        if (error.name === 'TimeoutError') {
+          qfErrorParams.code = BlazionErrorCode.TIMEOUT;
+          qfErrorParams.message = 'Request timed out';
+        } else if (error.name === 'AbortError') {
           qfErrorParams.code = BlazionErrorCode.ABORT;
           qfErrorParams.message = 'Request was manually aborted';
         }
